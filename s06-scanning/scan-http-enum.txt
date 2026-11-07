@@ -1,0 +1,17 @@
+Starting Nmap 7.991 ( https://nmap.org ) at 2026-11-07 11:01 -0500
+Nmap scan report for 192.168.88.134
+Host is up (0.00075s latency).
+
+PORT   STATE SERVICE
+80/tcp open  http
+| http-enum: 
+|   /tikiwiki/: Tikiwiki
+|   /test/: Test page
+|   /phpinfo.php: Possible information file
+|   /phpMyAdmin/: phpMyAdmin
+|   /doc/: Potentially interesting directory w/ listing on 'apache/2.2.8 (ubuntu) dav/2'
+|   /icons/: Potentially interesting folder w/ directory listing
+|_  /index/: Potentially interesting folder
+MAC Address: 00:0C:29:9F:DF:28 (VMware)
+
+Nmap done: 1 IP address (1 host up) scanned in 2.19 seconds
